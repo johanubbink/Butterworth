@@ -27,11 +27,13 @@ struct DiscreteSS {
 class Butterworth
 {
 public:
-  Butterworth(double wc, double dt, int n);
+  Butterworth(double wc, double dt, int n, int size);
 private:
   Eigen::VectorXd calculate_a_coeff(double wc, int n);
   ContinuousSS tf2ss(Eigen::VectorXd a_coeff, double b_coeff);
   DiscreteSS continuous2discrete(ContinuousSS cont_sys, double dt);
+  DiscreteSS discrete_sys;
+  Eigen::MatrixXd state_x;
 };
 
 

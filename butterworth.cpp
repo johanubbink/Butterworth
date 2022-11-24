@@ -13,8 +13,9 @@ namespace filter
  * @param wc Cutoff frequency of filter [rad/s]
  * @param dt Sampling time of filter
  * @param n  Order of butterworth filter
+ * @param size Number of input channels
  */
-Butterworth::Butterworth(double wc, double dt, int n)
+Butterworth::Butterworth(double wc, double dt, int n, int size)
 {
   std::cout << "Creating a filter with: \n";
   std::cout << "    wc: " << wc << "\n";
@@ -23,19 +24,18 @@ Butterworth::Butterworth(double wc, double dt, int n)
 
   // calculate the a coefficients
   Eigen::VectorXd a_coeff = Butterworth::calculate_a_coeff(wc, n);
-  std::cout << "a_coeff : \n" << a_coeff << "\n";
 
   // calculate the b coefficients
   // scaled for the cutoff frequency
   double b_coeff = std::pow(wc, n);
-  std::cout << "b_coeff : \n" << b_coeff << "\n";
 
   // convert transfer function to continuous state space
-  ContinuousSS cont_sys = Butterworth::tf2ss(a_coeff, b_coeff);
+  ContinuousSS cont_ss = Butterworth::tf2ss(a_coeff, b_coeff);
+  discrete_sys = Butterworth::continuous2discrete(cont_ss, dt);
 
-  std::cout << cont_sys.Ac << "\n";
-  std::cout << cont_sys.Bc << "\n";
-  std::cout << cont_sys.Cc << "\n";
+  // initialize the states 
+  state_x = Eigen::VectorXd::Zero(n, size);
+
 }
 
 /**
@@ -61,7 +61,6 @@ Eigen::VectorXd Butterworth::calculate_a_coeff(double wc, int n)
   // calculate the coefficients
   for (int i = 0; i < n; i++)
   {
-    std::cout << i << "\n";
     a_coeff[i + 1] = (std::cos(i * gamma) * a_coeff[i]) / (std::sin((i + 1) * gamma));
   }
 
@@ -99,7 +98,6 @@ ContinuousSS Butterworth::tf2ss(Eigen::VectorXd a_coeff, double b_coeff)
   // Create the C vector
   Eigen::RowVectorXd C = Eigen::RowVectorXd::Zero(1, n);
   C[0] = 1;
-  std::cout << C;
 
   // Store within a structure
   ContinuousSS cont_system;
@@ -119,7 +117,24 @@ ContinuousSS Butterworth::tf2ss(Eigen::VectorXd a_coeff, double b_coeff)
  */
 DiscreteSS Butterworth::continuous2discrete(ContinuousSS cont_sys, double dt)
 {
+  std::cout << "Convert continuous system to a discrete system \n";
+
+  // Create a discrete system
   DiscreteSS disc_sys;
+
+  int n = cont_sys.Bc.size();
+  Eigen::MatrixXd eye = Eigen::MatrixXd::Identity(n, n);
+
+  // Determine discrete a matrix
+  // use (approximate) matrix exponential
+  disc_sys.Ad = eye + cont_sys.Ac * dt + cont_sys.Ac * cont_sys.Ac * dt * dt / 2;
+
+  // determine discrete B
+  disc_sys.Bd = cont_sys.Ac.colPivHouseholderQr().solve((disc_sys.Ad - eye)*cont_sys.Bc);
+  
+  // C matrix stays the same
+  disc_sys.Cd = cont_sys.Cc;
+
   return disc_sys;
 }
 
