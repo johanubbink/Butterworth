@@ -1,5 +1,13 @@
 #include <iostream>
 
+#include "butterworth.h"
+
+
 int main(int, char**) {
-    std::cout << "Hello, world!\n";
+
+    // create a filter
+    filter::Butterworth filter = filter::Butterworth(50, 1/200, 3);
+
+
+
 }
