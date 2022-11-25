@@ -1,3 +1,14 @@
+/**
+ * @file butterworth.cpp
+ * @author Johan Ubbink (johan.ubbink@kuleuven.be)
+ * @brief Basic implementation of a butterworth filter
+ * @version 0.1
+ * @date 2022-11-25
+ *
+ * @copyright Copyright (c) 2022
+ *
+ */
+
 #define _USE_MATH_DEFINES
 
 #include <iostream>
@@ -17,11 +28,6 @@ namespace filter
  */
 Butterworth::Butterworth(double wc, double dt, int n, int size)
 {
-  std::cout << "Creating a filter with: \n";
-  std::cout << "    wc: " << wc << "\n";
-  std::cout << "    dt: " << dt << "\n";
-  std::cout << "    n : " << n << "\n";
-
   // calculate the a coefficients
   Eigen::VectorXd a_coeff = Butterworth::calculate_a_coeff(wc, n);
 
@@ -32,14 +38,12 @@ Butterworth::Butterworth(double wc, double dt, int n, int size)
   // convert transfer function to continuous state space
   ContinuousSS cont_ss = Butterworth::tf2ss(a_coeff, b_coeff);
 
-  // std::cout << cont_ss.Ac << "\n";
+  // convert to a discrete system
   discrete_sys = Butterworth::continuous2discrete(cont_ss, dt);
-  // std::cout << discrete_sys.Ad << "\n";
-  // std::cout << discrete_sys.Bd << "\n";
-  // initialize the states
-  state_x = Eigen::VectorXd::Zero(n, size);
 
-  // std::cout << state_x << '\n';
+  // initialize the states
+  state_x = Eigen::MatrixXd::Zero(n, size);
+
 }
 
 /**
@@ -83,8 +87,6 @@ Eigen::VectorXd Butterworth::calculate_a_coeff(double wc, int n)
  */
 ContinuousSS Butterworth::tf2ss(Eigen::VectorXd a_coeff, double b_coeff)
 {
-  std::cout << "Converting transfer function to ss \n";
-
   // Determine size of the system
   int n = a_coeff.size() - 1;
 
@@ -121,8 +123,6 @@ ContinuousSS Butterworth::tf2ss(Eigen::VectorXd a_coeff, double b_coeff)
  */
 DiscreteSS Butterworth::continuous2discrete(ContinuousSS cont_sys, double dt)
 {
-  std::cout << "Convert continuous system to a discrete system \n";
-
   // Create a discrete system
   DiscreteSS disc_sys;
 
@@ -130,10 +130,7 @@ DiscreteSS Butterworth::continuous2discrete(ContinuousSS cont_sys, double dt)
   Eigen::MatrixXd eye = Eigen::MatrixXd::Identity(n, n);
 
   // Determine discrete a matrix
-  // use (approximate) matrix exponential
-  disc_sys.Ad = eye + cont_sys.Ac * dt + cont_sys.Ac * cont_sys.Ac * dt * dt / 2 +
-                cont_sys.Ac * cont_sys.Ac * cont_sys.Ac * dt * dt * dt / (2 * 3);
-
+  disc_sys.Ad = Butterworth::expm(cont_sys.Ac * dt);
   // determine discrete B
   disc_sys.Bd = cont_sys.Ac.colPivHouseholderQr().solve((disc_sys.Ad - eye) * cont_sys.Bc);
 
@@ -152,15 +149,37 @@ DiscreteSS Butterworth::continuous2discrete(ContinuousSS cont_sys, double dt)
 std::vector<double> Butterworth::step(std::vector<double> u)
 {
   // convert input to eigen vector
-  Eigen::VectorXd u_vec = Eigen::VectorXd::Map(u.data(), u.size());
+  Eigen::RowVectorXd u_vec = Eigen::RowVectorXd::Map(u.data(), u.size());
 
   // apply the input
   state_x = discrete_sys.Ad * state_x + discrete_sys.Bd * u_vec;
   Eigen::RowVectorXd y_out = discrete_sys.Cd * state_x;
 
   // convert from eigen back to vector
-  std::vector<double> y (y_out.data(), y_out.size() + y_out.data());
- 
+  std::vector<double> y(y_out.data(), y_out.size() + y_out.data());
+
   return y;
+}
+
+/**
+ * @brief Calculates (approximate) matrix exponential
+ * https://en.wikipedia.org/wiki/Matrix_exponential
+ * Based on the power series
+ * @param A Input matrix
+ * @return Eigen::MatrixXd Exponential of the matrix
+ */
+Eigen::MatrixXd Butterworth::expm(Eigen::MatrixXd A)
+{
+  int n = A.cols();
+
+  Eigen::MatrixXd expA_k = Eigen::MatrixXd::Identity(n, n);
+  Eigen::MatrixXd accumulator = Eigen::MatrixXd::Identity(n, n);
+  for (int i = 1; i < 10; i++)
+  {
+    accumulator = accumulator * (A / i);
+    expA_k = expA_k + accumulator;
+  }
+
+  return expA_k;
 }
 }  // namespace filter

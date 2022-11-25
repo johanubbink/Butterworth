@@ -37,6 +37,7 @@ private:
   DiscreteSS continuous2discrete(ContinuousSS cont_sys, double dt);
   DiscreteSS discrete_sys;
   Eigen::MatrixXd state_x;
+  Eigen::MatrixXd expm(Eigen::MatrixXd A);
 };
 
 }  // namespace filter
