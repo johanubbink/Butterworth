@@ -31,11 +31,15 @@ Butterworth::Butterworth(double wc, double dt, int n, int size)
 
   // convert transfer function to continuous state space
   ContinuousSS cont_ss = Butterworth::tf2ss(a_coeff, b_coeff);
-  discrete_sys = Butterworth::continuous2discrete(cont_ss, dt);
 
-  // initialize the states 
+  // std::cout << cont_ss.Ac << "\n";
+  discrete_sys = Butterworth::continuous2discrete(cont_ss, dt);
+  // std::cout << discrete_sys.Ad << "\n";
+  // std::cout << discrete_sys.Bd << "\n";
+  // initialize the states
   state_x = Eigen::VectorXd::Zero(n, size);
 
+  // std::cout << state_x << '\n';
 }
 
 /**
@@ -127,15 +131,36 @@ DiscreteSS Butterworth::continuous2discrete(ContinuousSS cont_sys, double dt)
 
   // Determine discrete a matrix
   // use (approximate) matrix exponential
-  disc_sys.Ad = eye + cont_sys.Ac * dt + cont_sys.Ac * cont_sys.Ac * dt * dt / 2;
+  disc_sys.Ad = eye + cont_sys.Ac * dt + cont_sys.Ac * cont_sys.Ac * dt * dt / 2 +
+                cont_sys.Ac * cont_sys.Ac * cont_sys.Ac * dt * dt * dt / (2 * 3);
 
   // determine discrete B
-  disc_sys.Bd = cont_sys.Ac.colPivHouseholderQr().solve((disc_sys.Ad - eye)*cont_sys.Bc);
-  
+  disc_sys.Bd = cont_sys.Ac.colPivHouseholderQr().solve((disc_sys.Ad - eye) * cont_sys.Bc);
+
   // C matrix stays the same
   disc_sys.Cd = cont_sys.Cc;
 
   return disc_sys;
 }
 
+/**
+ * @brief Apply input to filter and receive output
+ *
+ * @param u Input applied
+ * @return std::vector<double> Ouput of filter
+ */
+std::vector<double> Butterworth::step(std::vector<double> u)
+{
+  // convert input to eigen vector
+  Eigen::VectorXd u_vec = Eigen::VectorXd::Map(u.data(), u.size());
+
+  // apply the input
+  state_x = discrete_sys.Ad * state_x + discrete_sys.Bd * u_vec;
+  Eigen::RowVectorXd y_out = discrete_sys.Cd * state_x;
+
+  // convert from eigen back to vector
+  std::vector<double> y (y_out.data(), y_out.size() + y_out.data());
+ 
+  return y;
+}
 }  // namespace filter

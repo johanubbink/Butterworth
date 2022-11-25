@@ -3,31 +3,34 @@
 
 #include <eigen3/Eigen/Dense>
 #include <eigen3/Eigen/Core>
+#include <vector>
 
 namespace filter
 {
-
 /**
  * @brief Struct to represent continuous state space model.
- * 
+ *
  */
-struct ContinuousSS {
+struct ContinuousSS
+{
   Eigen::MatrixXd Ac;
   Eigen::VectorXd Bc;
   Eigen::RowVectorXd Cc;
 };
 
-struct DiscreteSS {
+struct DiscreteSS
+{
   Eigen::MatrixXd Ad;
   Eigen::VectorXd Bd;
   Eigen::RowVectorXd Cd;
 };
 
-
 class Butterworth
 {
 public:
   Butterworth(double wc, double dt, int n, int size);
+  std::vector<double> step(std::vector<double> u);
+
 private:
   Eigen::VectorXd calculate_a_coeff(double wc, int n);
   ContinuousSS tf2ss(Eigen::VectorXd a_coeff, double b_coeff);
@@ -35,8 +38,6 @@ private:
   DiscreteSS discrete_sys;
   Eigen::MatrixXd state_x;
 };
-
-
 
 }  // namespace filter
 
