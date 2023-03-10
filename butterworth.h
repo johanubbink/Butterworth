@@ -1,3 +1,12 @@
+/**
+ * @file butterworth.h
+ * @author Johan Ubbink (johan.ubbink@kuleuven.be)
+ * @brief Implementation of a butterworth filter
+ * @version 0.1
+ * @date 2023-03-10
+ *
+ */
+
 #ifndef BUTTERWORTH_H
 #define BUTTERWORTH_H
 
@@ -76,7 +85,7 @@ namespace filter
      */
     DiscreteSS continuous2discrete(ContinuousSS cont_sys, double dt);
 
-        DiscreteSS discrete_sys;
+    DiscreteSS discrete_sys;
     Eigen::MatrixXd state_x;
 
     /**
