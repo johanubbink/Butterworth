@@ -14,7 +14,7 @@
 #include <eigen3/Eigen/Core>
 #include <vector>
 
-namespace filter
+namespace butter
 {
   /**
    * @brief Struct to represent continuous state space model.

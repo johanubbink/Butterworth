@@ -15,7 +15,7 @@
 
 #include "butterworth.h"
 
-namespace filter
+namespace butter
 {
   Butterworth::Butterworth(double wc, double dt, int n, int size)
   {

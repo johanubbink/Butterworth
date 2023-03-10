@@ -15,7 +15,7 @@ sudo apt install libeigen3-dev
 
 Install the code with:
 ```bash
-git clone 
+git clone git@github.com:johanubbink/Butterworth.git
 cd butterworth
 mkdir build
 cd build
@@ -39,7 +39,7 @@ int main(int, char **)
   //    cutoff frequency of 50 rad/s
   //    sampling time of 1/200 s
   //    2 input channels filtered in parallel
-  filter::Butterworth filter = filter::Butterworth(50, 1.0 / 200, 4, 2);
+  butter::Butterworth filter {50, 1.0 / 200, 4, 2};
 
   // apply input to filter
   std::vector<double> u{4, 3};
