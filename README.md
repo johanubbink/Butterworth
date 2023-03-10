@@ -35,9 +35,10 @@ sudo make install
 
 int main(int, char **)
 {
-  // create a butterworth filter with cutoff frequency of 50 rad/s
-  // and sampling time of 1/200 s
-  // und 2 input channels filtered in parallel
+  // create a butterworth filter with 
+  //    cutoff frequency of 50 rad/s
+  //    sampling time of 1/200 s
+  //    2 input channels filtered in parallel
   filter::Butterworth filter = filter::Butterworth(50, 1.0 / 200, 4, 2);
 
   // apply input to filter
